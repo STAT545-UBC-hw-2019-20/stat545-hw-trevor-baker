@@ -2,7 +2,9 @@
 title: "Assignment 2"
 author: "Trevor Baker"
 date: "23/09/2019"
-output: html_document   
+output: 
+  html_document:
+    keep_md: true   
 ---
 
 ```{r setup, include=FALSE, message=F}
