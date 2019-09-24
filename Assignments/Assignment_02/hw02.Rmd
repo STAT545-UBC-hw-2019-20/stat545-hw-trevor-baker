@@ -1,8 +1,8 @@
 ---
 title: "Assignment 2"
 author: "Trevor Baker"
-date: "19/09/2019"
-output: github_document   
+date: "23/09/2019"
+output: html_document   
 ---
 
 ```{r setup, include=FALSE, message=F}
