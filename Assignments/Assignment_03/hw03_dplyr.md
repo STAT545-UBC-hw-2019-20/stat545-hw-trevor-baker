@@ -53,6 +53,8 @@ o2g <- gapminder %>%
             facet_wrap(~continent)
 ```
 
+The table and graph here show the minimum and maximum GDP per capita for each continent. The graph has extra information by providing the trend in minimum and maximum GDP per capita over the study period, while the horizontal lines match the table data by showing the absolute minimums and maximums recorded for each continent.
+
 <div class="twoC">
 
 continent    minGDP   maxGDP
@@ -77,7 +79,7 @@ Oceania       10040    34435
 ```r
 o3 <- gapminder %>%
         group_by(continent) %>%
-        summarize(summ=list(c(summary(lifeExp) %>% round(digits=1)))) %>%
+        summarize(summ=list(c(summary(gdpPercap) %>% round(digits=1)))) %>%
         unnest_wider(summ)
 ```
 
@@ -93,15 +95,18 @@ o3g <- gapminder %>%
        y="GDP per capita, US $ (inflation-adjusted)",
        colour="Continent")
 ```
+
+The table here shows the statistical summary describing GDP per capita over the 1952 to 2007 period. The graph also illustrates the full range of data plots by using a jittered layout to show every data point in the dataset. The log scale on the graph makes it easier to see detail at the lower end of the y-axis.
+
 <div class="twoC">
 
-continent    Min.   1st Qu.   Median   Mean   3rd Qu.   Max.
-----------  -----  --------  -------  -----  --------  -----
-Africa       23.6      42.4     47.8   48.9      54.4   76.4
-Americas     37.6      58.4     67.0   64.7      71.7   80.7
-Asia         28.8      51.4     61.8   60.1      69.5   82.6
-Europe       43.6      69.6     72.2   71.9      75.5   81.8
-Oceania      69.1      71.2     73.7   74.3      77.6   81.2
+continent       Min.   1st Qu.    Median      Mean   3rd Qu.       Max.
+----------  --------  --------  --------  --------  --------  ---------
+Africa         241.2     761.2    1192.1    2193.8    2377.4    21951.2
+Americas      1201.6    3427.8    5465.5    7136.1    7830.2    42951.7
+Asia           331.0    1057.0    2646.8    7902.2    8549.3   113523.1
+Europe         973.5    7213.1   12081.7   14469.5   20461.4    49357.2
+Oceania      10039.6   14141.9   17983.3   18621.6   22214.1    34435.4
 
 ![](hw03_dplyr_files/figure-html/opt_3_output-1.png)<!-- -->
 </div>
@@ -171,10 +176,12 @@ o6g <-  df1 %>%
                                 values=c("darkslategray4","firebrick4","grey"), #order apprently needs to be in reverse of when called
                                 labels=c("Kuwait","Equatorial Guinea","Other")) + 
             theme_bw() +
-            labs(title="Kuwait and Equatorial Guinea have had major population \n fluctuations due to armed conflict", #\n for line break
+            labs(title="Kuwait and Equatorial Guinea have had major population \n fluctuations due to armed conflict",
                  x="",
                  y="5-year population change (%)")
 ```
+
+I looked for patterns in population change by country over the course of the dataset. Equatorial Guinea and Kuwait stood out because they both have periods that rank among the highest and lowest 5-year population changes among all countries. This is due to armed conflict, with Equatorial Guinea having a period of political violence and war in the 1970's and Kuwait being in conflict with Iraq in the late 1980's and early 1990's. The table and graph both show percentage change over 5-year periods.
 
 <div class="twoC">
 
