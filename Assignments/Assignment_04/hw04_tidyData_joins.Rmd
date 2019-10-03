@@ -1,0 +1,52 @@
+---
+title: "hw04 - Tidy data and joins"
+author: "Trevor Baker"
+date: "03/10/2019"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r setup, echo=F, warning=F, message=F}
+
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(gapminder)
+
+```
+
+
+### Exercise 1
+- Make a tibble with one row per year, and columns for life expectancy for two or more countries.
+- Take advantage of this new data shape to scatterplot life expectancy for one country against that of another.
+- Re-lengthen the data.
+
+
+```{r ex1_1}
+
+#part 1
+gapminder %>%
+  pivot_wider( id_cols = year,
+               names_from = "country",
+               values_from = "lifeExp") %>%
+  select(year, Canada, Japan, Switzerland)
+
+```
+
+```{r ex1_p2}
+
+#part 2
+gapminder %>%
+  pivot_wider( id_cols = year,
+               names_from = "country",
+               values_from = "lifeExp") %>%
+  select(year, Canada, Japan, Switzerland) %>%
+  ggplot(aes(x=Canada, y=Japan, label=year)) +
+    geom_point() +
+    labs(x="Canadian life expectancy",
+         y="Japanese life expectancy") +
+    geom_text(nudge_x = 0.5)
+
+```
+
