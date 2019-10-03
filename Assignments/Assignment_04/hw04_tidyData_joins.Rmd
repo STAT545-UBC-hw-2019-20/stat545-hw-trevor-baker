@@ -7,7 +7,7 @@ output:
     keep_md: true
 ---
 
-```{r setup, echo=F, warning=F, message=F}
+```{r setup, warning=F, message=F}
 
 library(tidyverse)
 library(tidyr)
