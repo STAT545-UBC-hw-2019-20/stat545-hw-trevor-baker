@@ -28,7 +28,7 @@ df1 <- gapminder %>%
         pivot_wider( id_cols = year,
                      names_from = "country",
                      values_from = "lifeExp") %>%
-        select(year, Canada, Japan, Switzerland)
+        select(year, Canada, Japan)
 
 knitr::kable( df1 )
 
@@ -44,7 +44,7 @@ df1 %>%
     geom_point() +
     labs(x="Canadian life expectancy",
          y="Japanese life expectancy") +
-    geom_text(nudge_x = 0.5)
+    geom_text(nudge_x = 0.4, size=3)
 
 ```
 
@@ -54,7 +54,7 @@ df1 %>%
 
 #part 2
 df1 %>%
-  pivot_longer( cols=c(Canada, Japan, Switzerland),
+  pivot_longer( cols=c(Canada, Japan),
                 names_to = "country",
                 values_to="lifeExp") %>%
   DT::datatable()
@@ -71,8 +71,8 @@ df1 %>%
 
 df2 <- gapminder %>%
         group_by(continent, year) %>%
-        summarize(min.GDP = min(gdpPercap),
-               min.lifeExp = min(lifeExp)) %>%
+        summarize(min.GDP = min(gdpPercap) %>% round(digits=2),
+               min.lifeExp = min(lifeExp)%>% round(digits=1)) %>%
         pivot_wider( id_cols = year,
                      names_from = "continent",
                      values_from = c("min.GDP", "min.lifeExp"))
@@ -90,7 +90,55 @@ DT::datatable( df2 )
 df2 %>%
   pivot_longer(cols=-year,
                names_to = c(".value", "continent"),
-               names_sep="_")
+               names_sep="_") %>%
+  DT::datatable()
+
+```
+
+### Exercise 3
+
+```{r ex3_data, message=F, echo=F}
+
+guest <- read_csv("https://raw.githubusercontent.com/STAT545-UBC/Classroom/master/data/wedding/attend.csv")
+email <- read_csv("https://raw.githubusercontent.com/STAT545-UBC/Classroom/master/data/wedding/emails.csv")
+
+```
+
+#### 3.1
+
+For each guest in the guestlist (guest tibble), add a column for email address, which can be found in the email tibble.
+
+```{r ex3_p1}
+
+email2 <- email %>% 
+            separate_rows(guest, sep = ", ") %>%
+            rename(name=guest)
+
+left_join(guest, email2, by="name") %>%
+  DT::datatable()
+
+```
+
+#### 3.2
+
+Who do we have emails for, yet are not on the guestlist?
+
+```{r ex3_p2}
+
+anti_join(email2, guest, by="name") %>%
+  knitr::kable()
+
+```
+
+#### 3.3
+
+Make a guestlist that includes everyone we have emails for (in addition to those on the original guestlist).
+
+```{r ex3_p3}
+
+full_join(guest, email2, by="name") %>%
+  arrange(party) %>%
+  DT::datatable()
 
 ```
 
