@@ -18,35 +18,79 @@ library(gapminder)
 
 
 ### Exercise 1
-- Make a tibble with one row per year, and columns for life expectancy for two or more countries.
-- Take advantage of this new data shape to scatterplot life expectancy for one country against that of another.
-- Re-lengthen the data.
 
+- Make a tibble with one row per year, and columns for life expectancy for two or more countries.
 
 ```{r ex1_1}
 
 #part 1
-gapminder %>%
-  pivot_wider( id_cols = year,
-               names_from = "country",
-               values_from = "lifeExp") %>%
-  select(year, Canada, Japan, Switzerland)
+df1 <- gapminder %>%
+        pivot_wider( id_cols = year,
+                     names_from = "country",
+                     values_from = "lifeExp") %>%
+        select(year, Canada, Japan, Switzerland)
+
+knitr::kable( df1 )
 
 ```
+
+- Take advantage of this new data shape to scatterplot life expectancy for one country against that of another.
 
 ```{r ex1_p2}
 
 #part 2
-gapminder %>%
-  pivot_wider( id_cols = year,
-               names_from = "country",
-               values_from = "lifeExp") %>%
-  select(year, Canada, Japan, Switzerland) %>%
+df1 %>%
   ggplot(aes(x=Canada, y=Japan, label=year)) +
     geom_point() +
     labs(x="Canadian life expectancy",
          y="Japanese life expectancy") +
     geom_text(nudge_x = 0.5)
+
+```
+
+- Re-lengthen the data.
+
+```{r ex1_p3}
+
+#part 2
+df1 %>%
+  pivot_longer( cols=c(Canada, Japan, Switzerland),
+                names_to = "country",
+                values_to="lifeExp") %>%
+  DT::datatable()
+  
+
+```
+
+
+### Exercise 2
+
+- Compute some measure of life expectancy and GDP per capita (or two other numeric variables) (mean? median? min? max?) for all possible combinations of continent and year. Reshape that to have one row per year and one variable for each continent-measurement combination. Or the other way around: one row per continent and one variable for each year-measurement combination.
+
+```{r ex2_p1}
+
+df2 <- gapminder %>%
+        group_by(continent, year) %>%
+        summarize(min.GDP = min(gdpPercap),
+               min.lifeExp = min(lifeExp)) %>%
+        pivot_wider( id_cols = year,
+                     names_from = "continent",
+                     values_from = c("min.GDP", "min.lifeExp"))
+
+DT::datatable( df2 )
+
+
+```
+
+
+- Re-lengthen the data.
+
+```{r ex2_p2}
+
+df2 %>%
+  pivot_longer(cols=-year,
+               names_to = c(".value", "continent"),
+               names_sep="_")
 
 ```
 
