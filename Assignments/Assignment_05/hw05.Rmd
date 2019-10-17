@@ -305,9 +305,33 @@ ggsave(filename = file.loc.plot,
 
 For this exercise, I am going to use a plot I made back in assignment 1. I looked at the relationship between GDP and life expectancy for the entire dataset, and see if there was a certain level of wealth at which the associated gains in life expectancy became muted. Without knowledge of `dplyr` and `ggplot2`, the process was more difficult than it could have been and the graph doesn't look as nice as what I can do now.
 
-First here is all the code I used to create the plot, along with some new comments on the steps involved:
-```{r ex4_old}
+Below on the left is my old graph done wth base R plotting, and on the right is my new version of the graph made with `ggplot2`:
+```{r ex4_new, warning=F}
 
+new.gr <- gapminder %>%
+            ggplot(aes(x = gdpPercap, 
+                       y = lifeExp)) +
+              geom_point( alpha=0.2, #make points transparent
+                          size=2 ) + #make them a little larger
+              geom_smooth( method = "lm", #linear model for the smoothed line
+                           formula = y ~ log(x)) + #formula for the line- this actually makes a log relationship which is what I want, not linear
+              scale_x_continuous(lim = c(0,50000), #limit the x-axis towards the low-GDP section in which the asymptote is approached
+                                 labels = scales::dollar_format() ) + #put x axis labels in dollar format
+              labs( x = "GDP per capita, ($ US, inflation-adjusted)", #make nice x axis label
+                    y = "Life expectancy", #nice y axis label
+                    title = "Life expectancy increases correlated to rising GDP seem to show diminishing returns",
+                    caption = "Data source: R gapminder package, http://www.gapminder.org/data") + #tell the user what I'm trying to show
+              theme_bw() + #use the nicer black and white theme
+              theme(plot.title = element_text(size=8, #change title size
+                                              face="bold"), #make title bold
+                    plot.caption = element_text(size=7), #make caption text smaller
+                    axis.title = element_text( face = "bold") ) #make axis labels bold
+```
+
+<!-- this code is written in the order of 1. store new graph to object, 2. make old graph, 3. display new graph because the base R plot can't be saved to an object in an Rmd file, and the two column display will fill the panel beside the old graph with my new graph's code if I don't call the new graph from an object-->
+
+<div class="twoC">
+```{r ex4_old_and_display, warning=F}
 #shorten name of gapminder dataset (lazy!)
 gm <- gapminder
 
@@ -332,83 +356,33 @@ leg.labels <- levels(as.factor(gm$continent))
 
 } #end brackets to keep it together
 
-#trying to save plot for side-by-side display
-#old.graph <- recordPlot() #doesn't work in Rmd
 
-```
-
-This is how I would make the same plot now:
-```{r ex4_new, warning = F}
-
-new.graph <- gapminder %>%
-                ggplot(aes(x = gdpPercap, 
-                           y = lifeExp,
-                           color = continent)) +
-                  geom_point( alpha=0.3, #make points transparent
-                              size=2 ) + #make them a little larger
-                  geom_smooth( aes( colour=NULL ), #I don't want a smoothed line for each continent, I want one for all, so need to set colour=NULL
-                               method = "lm", #linear model for the smoothed line
-                               formula = y ~ log(x), #formula to use for the line's model - this actually makes a log relationship which is what I want - not linear
-                               key_glyph = "blank") + #I don't want lines to be shown in the legend, just points
-                  scale_x_continuous(lim = c(0,50000), #limit the x-axis towards the low-GDP section in which the asymptote is approached
-                                     labels = scales::dollar_format() ) + #put x axis labels in dollar format
-                  labs( x = "GDP per capita, ($ US, inflation-adjusted)", #make nice x axis label
-                        y = "Life expectancy", #nice y axis label
-                        colour = "") + #don't label legend, redundant
-                  theme_bw() #use the nicer black and white theme
-
-```
-Before I compare the two graphs, one comment is that since I made my first graph in base R, there doesn't seem to be a way to save the plot as an object and print it in side-by-side with the new one. I found the `recordPlot` function but it doesn't seem to work in an .Rmd file. Just to show that I saw the instruction and know how to do it, here is my new graph duplicated in a two panel display:
-
-<div class="twoC">
-```{r ex4_display, warning = F}
-
-#display duplicate of the new graph because can't get old one to save
-new.graph
-new.graph
+new.gr #display the new graph
 
 ```
 </div>
 <div class="clearer"></div>
 
-And the old graph again, just for ease of comparison:
-```{r ex4_oldGraph-silent, echo=F}
 
-{ # these brackets are so the legend is written to the same image as the plot
-  
-  #create plot
-  plot(gm$gdpPercap, #x variable
-       gm$lifeExp,  #y variable
-       xlim=c(0,50000), #x axis limits
-       ylab="Life expectancy (years)",
-       xlab="GDP per capita",
-       main="Life expectancy vs GDP by continent",
-       col=as.factor(gm$continent)) #colour points by continent
-  
-  #create legend in bottom right
-  legend("bottomright", pch=21, pt.bg=1:length(leg.labels),
-       legend=leg.labels ) 
-
-}
-
-```
-
-
-
-### A comparison of the two graphs:
- - The quality of the image is higher in the new graph; it looks more modern and sharp
- - I didn't have to manually create a legend
- - The use of `geom_point( alpha = 0.3 )` allowed points to not overshadow eachother as much
+#### A comparison of the two graphs:
+ - The quality of the image is higher in the new graph; it looks more modern and sharp.
+ - In my original graph, I didn't really like how the hollow markers looked. but I couldn't use solid filled points because there was too much overlap.
+  + In the new graph, the use of the _alpha_ argument allowed points to not overshadow eachother as much.
+ - Because I didn't colour points by continent in the new graph, I didn't need a legend at all. 
+  + If I did need a legend, then `ggplot2` would have done it for me automatically, saving the steps of manually creating it in my original code.
  
-### Things I did differently in the new graph:
- - I removed the redundant "(years)" part of the y-axis label
- - I improved the y-axis label by putting the units GDP is measured in
- - The x-axis tick marks are labelled with dollar signs
+#### Things I did differently in the new graph:
+ - I added a fitted logarithmic line to guide the viewer's eye to the trend I am trying to show.
+ - I did not colour points by continents because the intention of the graph is to show the effect of GDP on life expectancy and extra colours distract the viewer's attention from what I want them to see.
+ - I changed the figure title so that it better reflects the graph's purpose.
+ - I added a caption for the data source, found using `?gapminder`.
+ - I removed the redundant "(years)" part of the y-axis label.
+ - I improved the y-axis label by putting the units of GDP.
+ - The x-axis tick marks are labelled with dollar signs.
  
-### Things I thought about doing differently but chose not to:
- - I considered putting a log x-axis with `scale_x_log10()`. It would declutter points and spread them out more, but I decided not to as the point I was originally trying to address was whether there is a certain GDP level that life expectancy gains are muted at. The linear x-axis shows that approach of the asymptote better, and allows easier reading of the x-axis values for the user to intepret.
- - I could also turn off the colour by continents, and keep all in one colour. This might distract less from the overall message in the graph and keep things more concise, also allowing me to do away with the legend. Ultimately, I thought there might still be interesting trends for the user to see if they wanted to look at certain continent trends within the overall picture.
- - I considered to turn off the x axis limits, but most of the points past $50000 are a distraction to the question I am seeking to answer. There are just a few points, mostly for Kuwait, where there is high income and low life expectancy.
+#### Things I thought about doing differently in the new graph but chose not to:
+ - I considered putting a log x-axis with `scale_x_log10()`. It would declutter points and spread them out more, but I decided not to as the point I was originally trying to address was whether there is a certain GDP level that life expectancy gains are muted at. The linear x-axis shows thelevelling of the trend better, and also allows easier reading of the x-axis values for the user to intepret.
+ - I considered to turn off the x-axis limits, but the points past $ 50000 (all from Kuwait) are a distraction to the trend I am trying to highlight.
 
 
 ## Exercise 5: Writing figures to file
