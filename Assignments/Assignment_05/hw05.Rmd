@@ -292,12 +292,6 @@ lifeExp_plot <- gm_manip %>%
 #display the plot
 lifeExp_plot
 
-#save the plot using here::here and ggsave()
-file.loc.plot <- here::here("Assignments", "Assignment_05", "hw05-lifeExp_plot.png")
-ggsave(filename = file.loc.plot,
-       plot = lifeExp_plot,
-       device = "png")
-
 ```
 
 
@@ -387,5 +381,38 @@ new.gr #display the new graph
 
 ## Exercise 5: Writing figures to file
 
+In order to save my plot in a reproducible way, I will use there `here` package to do so. I will save the last plot I made in exercise 4 by not specifying the `plot` argument within `ggsave`.
+```{r ex5_save_last, warning = F}
 
-## Exercise 6: But I want to do more! (optional)
+#set file saving location with here::here
+file.loc.ex5plot1 <- here::here("Assignments", "Assignment_05", "ex5_plot-GDP_x_lifeExp.png")
+
+#because I am not specifying the plot argument, this will save the last plot I made
+ggsave(filename = file.loc.ex5plot1, 
+       device = "png")
+
+```
+
+Sometimes, though, I won't want to save the last plot I made and will need to use the `plot` argument of `ggsave`, as in the example below where I call in the plot I made back in exercise 3. Just to mix it up, I will save this plot in pdf format (vector) instead of png format (raster), and I will save one copy in wide format and one in narrow format.
+```{r ex5_save_earlier}
+
+#save the exercise 3 plot using here::here and ggsave(), make it wider
+file.loc.ex5plot2_wide <- here::here("Assignments", "Assignment_05", "ex5_plot-lifeExp_CV_Asia-wide.pdf")
+ggsave(filename = file.loc.ex5plot2_wide,
+       plot = lifeExp_plot,
+       device = "pdf",
+       width = 12,
+       height = 6)
+
+#save the exercise 3 plot but make it tall and narrow
+file.loc.ex5plot2_tall <- here::here("Assignments", "Assignment_05", "ex5_plot-lifeExp_CV_Asia-tall.pdf")
+ggsave(filename = file.loc.ex5plot2_tall,
+       plot = lifeExp_plot,
+       device = "pdf",
+       height = 12,
+       width = 5)
+
+```
+
+
+Now I can embed the files in my markdown report via links. Here is [the wide one](ex5_plot-lifeExp_CV_Asia-wide.pdf) and here is [the tall and narrow one](ex5_plot-lifeExp_CV_Asia-tall.pdf).
