@@ -17,6 +17,16 @@ library(here)
 
 ```
 
+<!--This is to set up the two-column and clearer output formats-->
+<style type="text/css">
+.twoC {width: 100%}
+.clearer {clear: both}
+.twoC .table {max-width: 50%; float: right}
+.twoC img {max-width: 50%; float: left}
+</style>
+<!-- end two-column setup -->
+
+
 ## Exercise 1: The value of the here::here package
 
 Setting working directories is not as straightforward as it seems. If someone else wants to run code that has its working directory defined with `setwd()`, then they will need to have the same folder structure as the originating computer. Likewise if you get a new computer, or move your work to another folder. There are additional compatibility problems when switching between operating systems as some use `\\` to separate folders in file paths, and others use `/`. There are additional inconsistenciegs between how `.R` files and `.Rmd` files deal with working directories.
@@ -144,7 +154,7 @@ coeff_var <- function(x){ sd(x) / mean(x) }
 
 ```
 
-In the code chunk below, the order of the country factor levels is changed based on the coefficent of variation in per-capita GDP observed for each country. I also made a new column holding the country column as it was given ('country_asGiven'), in order to use it for the example graphs below.
+In the code chunk below, the order of the country factor levels is changed based on the coefficent of variation in per-capita GDP observed for each country. I also made a new column holding the country column as it was given (country_asGiven), in order to use it for the example graphs below.
 
 In order to do this, I first had to make a simple function to compute the coefficient of variation, which is equal to the standard deviation divided by the mean.
 ```{r factor_reord}
@@ -163,9 +173,11 @@ To make the example graphs more readable, I first filtered it down to countries 
 gm_reord_drop <- gm_reord %>%
                   filter(continent == "Europe") %>% #filter to Europe only
                   droplevels() %>% #drop unused factor levels, to get rid of non-European countries and continents
-                  group_by(country, country_asGiven) %>% #group data by country (both forms) for the summarize function below
-                  summarize(GDP_cv = coeff_var(gdpPercap)) #summarize down to one column of the GDP coeff_var values to graph by
-
+                  #group_by(country, country_asGiven) %>% #group data by country (both forms) for the summarize function below
+                  group_by(country) %>% #group data by country (both forms) for the summarize function below
+                  #summarize(GDP_cv = coeff_var(gdpPercap)) %>% #summarize down to one column of the GDP coeff_var values to graph by
+                  summarize(GDP_cv = sd(gdpPercap)) %>% #summarize down to one column of the GDP coeff_var values to graph by
+                  ungroup()
 ```
 
 This first graph has its countries out of order relative to their summary data values, and it is hard to interpret:
@@ -250,6 +262,7 @@ gm_input <- readRDS(file.loc)
 identical(gm_input, gm_summary)
 
 ```
+__I was successful in saving the file and then reading it back!__
 
 
 Now I can manipulate the new tibble by filtering down to just Asia and adjusting the order of its factor levels. Here I'm aiming to organize the country levels according to the coefficient of variation, but I really want to have Cambodia first in my graph display.
@@ -289,6 +302,80 @@ ggsave(filename = file.loc.plot,
 
 
 ## Exercise 4: Visualization design
+
+For this exercise, I am going to use a plot I made back in assignment 1. I looked at the relationship between GDP and life expectancy for the entire dataset, and see if there was a certain level of wealth at which the associated gains in life expectancy became muted. Without knowledge of `dplyr` and `ggplot2`, the process was more difficult than it could have been and the graph doesn't look as nice as what I can do now.
+
+First here is all the code I used to create the plot, along with some new comments on the steps involved:
+```{r ex4_old}
+
+#shorten name of gapminder dataset (lazy!)
+gm <- gapminder
+
+#need labels for legend
+leg.labels <- levels(as.factor(gm$continent)) 
+
+#create the plot with a legend
+{ # these brackets are so the legend is written to the same image as the plot
+  
+  #create plot
+  plot(gm$gdpPercap, #x variable
+       gm$lifeExp,  #y variable
+       xlim=c(0,50000), #x axis limits
+       ylab="Life expectancy (years)",
+       xlab="GDP per capita",
+       main="Life expectancy vs GDP by continent",
+       col=as.factor(gm$continent)) #colour points by continent
+  
+  #create legend in bottom right
+  legend("bottomright", pch=21, pt.bg=1:length(leg.labels),
+       legend=leg.labels ) 
+
+} #end brackets to keep it together
+
+#trying to save plot for side-by-side display
+#old.graph <- recordPlot() #doesn't work in Rmd
+
+```
+
+This is how I would make the same plot now:
+```{r ex4_new}
+
+new.graph <- gapminder %>%
+                ggplot(aes(x = gdpPercap, 
+                           y = lifeExp,
+                           color = continent)) +
+                  geom_point( alpha=0.3, #make points transparent
+                              size=2 ) + #make them a little larger
+                  geom_smooth( aes( colour=NULL ), #I don't want a smoothed line for each continent, I want one for all, so need to set colour=NULL
+                               method = "lm", #linear model for the smoothed line
+                               formula = y ~ log(x), #formula to use for the line's model - this actually makes a log relationship which is what I want - not linear
+                               key_glyph = "blank") + #I don't want lines to be shown in the legend, just points
+                  scale_x_continuous(lim = c(0,50000), #limit the x-axis towards the low-GDP section in which the asymptote is approached
+                                     labels = scales::dollar_format() ) + #put x axis labels in dollar format
+                  labs( x = "GDP per capita, ($ US, inflation-adjusted)", #make nice x axis label
+                        y = "Life expectancy", #nice y axis label
+                        colour = "") + #don't label legend, redundant
+                  theme_bw() #use the nicer black and white theme
+
+```
+Before I compare the two graphs, one comment is that since I made my first graph in base R, there doesn't seem to be a way to save the plot as an object and print it in side-by-side with the new one. I found the `recordPlot` function but it doesn't seem to work in an .Rmd file. Just to show that I saw the instruction and know how to do it, here is my new graph duplicated in a two panel display:
+
+<div class="twoC">
+```{r ex4_display}
+
+#display duplicate of the new graph because can't get old one to save
+new.graph
+new.graph
+
+```
+</div>
+<div class="clearer"></div>
+
+
+
+
+* A comparison of the two graphs:
+ - 
 
 
 ## Exercise 5: Writing figures to file
