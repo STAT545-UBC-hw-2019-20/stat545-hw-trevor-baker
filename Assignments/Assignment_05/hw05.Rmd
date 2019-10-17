@@ -1,5 +1,5 @@
 ---
-title: "hw05"
+title: "Assignment 5 - Factors and data input-output"
 author: "Trevor Baker"
 date: "15/10/2019"
 output: 
@@ -14,6 +14,7 @@ library(tidyverse)
 library(gapminder)
 library(forcats)
 library(here)
+library(DT)
 
 ```
 
@@ -40,16 +41,6 @@ _`here` makes work easily transferable, and readily reproducible, which should b
 
 ## Exercise 2: Factor management
 
-__Task:__ Choose one dataset (of your choice) and a variable to explore. After ensuring the variable(s) you’re exploring are indeed factors, you should:
-
-    Drop factor / levels;
-    Reorder levels based on knowledge from data.
-
-Explore the effects of re-leveling a factor in a tibble by:
-
-    comparing the results of arrange on the original and re-leveled factor.
-    Plotting a figure of before/after re-leveling the factor (make sure to assign the factor to an aesthetic of your choosing).
-
 #### Gapminder option
 
 __Drop Oceania.__ _Filter the Gapminder data to remove observations associated with the continent of Oceania. Additionally, remove unused factor levels. Provide concrete information on the data before and after removing these rows and Oceania; address the number of rows and the levels of the affected factors._
@@ -62,7 +53,7 @@ gapminder$continent %>% class()
 
 ```
 
-The code chunk below provides a look at factor levels in `gapminder`before Oceania is dropped from the continent column. There are actually two factor columns in `gapminder`: continent and country. If we were dropping Oceania from the dataset for further analysis, it would be important to also remove Oceania-associated factor levels from the country column, as they will have no associated obervations (i.e. rows) remaining, so these will be dealt with as well in the following steps. 
+The code chunk below provides a look at factor levels in `gapminder$continent`before Oceania is dropped. There are actually two factor columns in `gapminder`: continent and country. If we were dropping Oceania from the dataset for further analysis, it would be important to also remove Oceania-associated factor levels from the country column, as they will have no associated obervations (i.e. rows) remaining, so these will be dealt with as well in the following steps. 
 ```{r factor_drop_before}
 
 #look at unique levels of gapminder$continent before removing Oceania:
@@ -85,7 +76,6 @@ gapminder %>%
 ```
 
 
-
 This chunk of code removes the Oceania rows from the dataset using the `filter()` function, and then drops all unused levels from all factor columns (i.e. country and continent) using the `droplevels()` function:
 ```{r factor_drop_filter}
 
@@ -95,8 +85,6 @@ gapminder_drop <- gapminder %>%
                     droplevels()
 
 ```
-
-
 
 
 This last code chunk from this task shows in multiple ways that Oceania has been dropped, as have associated factor levels from both the country and continent columns:
@@ -113,12 +101,15 @@ gapminder_drop %>%
   group_by(continent) %>%
   summarize(n_country = n_distinct(country))
   
-#and this code outputting zero rows further confirms that Australia and New Zealand are no longer in the dataset:
-gapminder_drop %>% filter(country %in% c("Australia", "New Zealand"))
+#and this code shows that the factor levels for Australia and New Zealand are no longer in the country column (i.e. the length of the number of country levels which are equal to Australia or New Zealand is zero):
+gapminder_drop$country %>% 
+  levels() %in% c("Australia", "New Zealand") %>%
+  which() %>%
+  length()
 
 ```
 
-If, for some reason, you only wanted to drop the Oceania factor level from the continent column but keep the now empty factor levels in the country column, you could use `forcats::fct_drop()` as in the code chunk below:
+If, for some reason, you only wanted to drop the Oceania factor level from the continent column but keep the now-empty factor levels in the country column, you could use `forcats::fct_drop()` as in the code chunk below:
 ```{r factor_drop_forcats}
 
 #This drops Oceania from the dataset and removes only unused factor levels in the continent column:
@@ -129,15 +120,15 @@ gapminder_drop2 <- gapminder %>%
 #now we can see that Oceania is no longer present in the continent factor levels:
 gapminder_drop2$continent %>% levels()
 
-#but Australia and NZ are still in the country factor levels, as shown by the number of country levels in the new tibble being the same as in the original gapminder tibble:
-(gapminder_drop2$country %>% nlevels()) == (gapminder$country %>% nlevels())
+#but Australia and NZ can still be found in the country column's factor levels (i.e. the length of the number of country levels which are equal to Australia or New Zealand is 2):
+gapminder_drop2$country %>% 
+  levels() %in% c("Australia", "New Zealand") %>%
+  which() %>%
+  length()
 
-#further proof the Australia and NZ levels still exist:
-country_levels <- gapminder_drop2$country %>% levels()
-which(country_levels %in% c("Australia", "New Zealand")) %>% length()
-
-#this is despite the Australia and NZ rows no longer being part of the dataset's rows, as shown by this code returning zero rows:
-gapminder_drop2 %>% filter(country %in% c("Australia", "New Zealand"))
+#this is despite the Australia and NZ rows no longer being part of the dataset, as shown by this code returning zero rows:
+gapminder_drop2 %>% 
+  filter(country %in% c("Australia", "New Zealand"))
 
 
 ```
@@ -145,27 +136,46 @@ gapminder_drop2 %>% filter(country %in% c("Australia", "New Zealand"))
 
 __Reorder the levels of country or continent.__ _Use the forcats package to change the order of the factor levels, based on summarized information of one of the quantitative variables. Consider experimenting with a summary statistic beyond the most basic choice of the mean/median. Use the forcats package in the tidyverse for this, rather than the baseR function as.factor._
 
-Reordering factor levels is helpful if you are making graphs with a categorical (i.e. factor-based) axis and want a sensible order for display. Without doing this, the graphed summary data would be displayed in disarray. For this taskI have chosen to reorder and display data by the magntiude of their coefficients of variation in per-capita GDP. 
+Reordering factor levels is helpful if you are making graphs with a categorical (i.e. factor-based) axis and want a sensible order for display. Without doing this, the graphed summary data would be displayed in disarray. For this task, I have chosen to reorder and display data by the magntiude of their coefficients of variation (CV) in per-capita GDP. 
 
-In order to do this, I first had to make a simple function to compute the coefficient of variation, which is equal to the standard deviation divided by the mean.
+In order to do this, I first had to make a simple function to compute CV, which is equal to the standard deviation divided by the mean.
 ```{r coeff_var}
 
-#define coefficient of variation function
-coeff_var <- function(x){ sd(x) / mean(x) }
+#define coefficient of variation function, round result to make it easier to read in datatable
+coeff_var <- function(x){ (sd(x) / mean(x)) %>% round(digits=4) }
 
 ```
 
 In the code chunk below, the order of the country factor levels is changed based on the coefficent of variation in per-capita GDP observed for each country. I also made a new column holding the country column as it was given (country_asGiven), in order to use it for the example graphs below.
 
-In order to do this, I first had to make a simple function to compute the coefficient of variation, which is equal to the standard deviation divided by the mean.
+In order to do this, I first had to make a simple function to compute the CV, which is equal to the standard deviation divided by the mean.
 ```{r factor_reord}
 
 #reorder the factor according to the coefficent of variation
 gm_reord <- gapminder %>%
               mutate(country_asGiven = country) %>% #this line just duplicates the country column as given, preserving the old factor order
-              mutate(country = forcats::fct_reorder(country, gdpPercap, coeff_var)) #this line reorders the country factor levels according to the size of the GDP coefficient of variation
+              mutate(country = forcats::fct_reorder(country, gdpPercap, coeff_var)) %>%#this line reorders the country factor levels according to the size of the GDP CV
+              group_by(country, country_asGiven, continent) %>% #group data by country (both forms) and continent for the summarize function below - need to keep all three columns in summarize's output so that I can do further work with them all. This doesn't change the output of the summarize table, except to add columns to it.
+              summarize(GDP_cv = coeff_var(gdpPercap)) %>% #summarize down to one column of the GDP coeff_var values to graph by
+              ungroup() #ungroup prior to further analysis
 
 ```
+
+Using the `arrange` function I can see that my reordering of the country column has been effective. In the first datatable output, using the country column in the default level order, Afghanistan comes first because it is the first country alphabetically. In the second datatable output, Senegal comes first because it has the lowest CV across its GDP data of all countries.
+```{r factor_reord_arrange}
+
+#this is the default order
+gm_reord %>%
+  arrange(country_asGiven) %>%
+  DT::datatable()
+
+#this is the reordered country column using CV(gdpPercap)
+gm_reord %>%
+  arrange(country) %>%
+  DT::datatable()
+
+```
+
 
 To make the example graphs more readable, I first filtered it down to countries in Europe, but this would be applicable if you were keeping all countries, as well. Since I dropped countries by filtering down to Europe, this required me to drop unused factor levels:
 ```{r factor_reord_filter}
@@ -173,11 +183,10 @@ To make the example graphs more readable, I first filtered it down to countries 
 #filter and drop unused factor levels, in order to make graph more legible.
 gm_reord_drop <- gm_reord %>%
                   filter(continent == "Europe") %>% #filter to Europe only
-                  droplevels() %>% #drop unused factor levels, to get rid of non-European countries and continents
-                  group_by(country, country_asGiven) %>% #group data by country (both forms) for the summarize function below
-                  summarize(GDP_cv = coeff_var(gdpPercap)) %>% #summarize down to one column of the GDP coeff_var values to graph by
-                  ungroup()
+                  droplevels() #drop unused factor levels, to get rid of non-European countries and continents
+                  
 ```
+
 
 This first graph has its countries out of order relative to their summary data values, and it is hard to interpret:
 ```{r factor_reord_badGraph}
@@ -189,8 +198,8 @@ gm_reord_drop %>%
                  y = GDP_cv)) + #bar size is based on max GDP for each country
     coord_flip() + #flip the graph to be displayed horizontally
     theme_bw() + #nicer black and white theme
-    labs(x = "Countries, default alphabetical order",
-         y = "Coefficient of variation in GDP per capita") #make better y label
+    labs(x = "Countries, default alphabetical order", #explain why country axis seems out of order
+         y = "Coefficient of variation in GDP per capita") #make better data label
 
 ```
 
@@ -204,23 +213,23 @@ gm_reord_drop %>%
                  y = GDP_cv)) + #bar size is based on max GDP for each country
     coord_flip() + #flip the graph to be displayed horizontally
     theme_bw() + #nicer black and white theme
-    labs(x = "Countries, ordered by data values",
-         y = "Coefficient of variation in GDP per capita") #make better y label
+    labs(x = "Countries, ordered by data values", #explain what country axis is showing
+         y = "Coefficient of variation in GDP per capita") #make better data axis label
 
 ```
 
 
 ## Exercise 3: File input/output (I/O)
 
-_Task:_ Experiment with at least one of:
+_Task:_ __Experiment with at least one of:__
 
     write_csv()/read_csv() (and/or TSV friends),
     saveRDS()/readRDS(),
     dput()/dget().
 
-You are expected to create something new, probably by filtering or grouped-summarization of your dataset (for e.g., Singer, Gapminder, or another dataset), export it to disk and then reload it back in using one of the packages above. You should use here::here() for reading in and writing out.
+__You are expected to create something new, probably by filtering or grouped-summarization of your dataset (for e.g., Singer, Gapminder, or another dataset), export it to disk and then reload it back in using one of the packages above. You should use here::here() for reading in and writing out.__
 
-With the imported data, play around with factor levels and use factors to order your data with one of your factors (i.e. non-alphabetically). For the I/O method(s) you chose, comment on whether or not your newly created file survived the round trip of writing to file then reading back in.
+__With the imported data, play around with factor levels and use factors to order your data with one of your factors (i.e. non-alphabetically). For the I/O method(s) you chose, comment on whether or not your newly created file survived the round trip of writing to file then reading back in.__
 
 
 #### __My work__
@@ -238,14 +247,17 @@ gm_summary <- gapminder %>%
 In this code chunk below, I need to use the here::here package to write and read the file I want to create in a consistent way:
 ```{r ex3_here}
 
-#this tells me that my root directory is my 'stat545-hw-trevor-baker' folder
+#this tells me that my root directory is my 'stat545-hw-trevor-baker' folder. if someone else opened this file from that folder, the path leading up to the 'stat545-hw-trevor-baker' folder would be different, but "here" would take care of writing system-compatible paths for that person as well:
 here::here() 
 
-#this tells me why 'here' has determined that to be the case -- it is because of the .Rproj file in that folder:
+#this tells me why 'here' has determined that to be my root directory -- it is because of the .Rproj file in that folder:
 here::dr_here()
 
 #this sets the full file path and name that I will write to, which I want to be in my Assignment_05 folder, two levels up from the 'here::here' root folder
 file.loc <- here::here("Assignments","Assignment_05","hw05-gm_summary.RDS")
+
+#this is the file location I will write to on my local machine:
+print(file.loc)
 
 ```
 
@@ -258,11 +270,12 @@ saveRDS(gm_summary, file.loc)
 #just to prove that the file is really read in, I will read it to a new object name 'gm_input'
 gm_input <- readRDS(file.loc)
 
-#this new file is identical to the one I created as gm_summary:
+#this new file is identical to the original, as proven by identical() returning TRUE:
 identical(gm_input, gm_summary)
 
 ```
 __I was successful in saving the file and then reading it back!__
+
 
 
 Now I can manipulate the new tibble by filtering down to just Asia and adjusting the order of its factor levels. Here I'm aiming to organize the country levels according to the coefficient of variation, but I really want to have Cambodia first in my graph display.
@@ -281,11 +294,11 @@ gm_manip$country %>% levels() %>% head()
 lifeExp_plot <- gm_manip %>%
                   ggplot(aes(x = country, 
                              y = lifeExp_cv, 
-                             fill = country=="Cambodia")) + #fill Cambodia differently that others to highlight it
+                             fill = country=="Cambodia")) + #fill Cambodia differently than other countries to further highlight it
                     geom_col() +
                     coord_flip() + #flip so that graph is displayed horizontally
                     theme_bw() + # nicer black and white theme
-                    theme(legend.position = "none") + #remove the legend
+                    theme(legend.position = "none") + #remove the legend, not informative, just shows Cambodia = TRUE/FALSE
                     labs(y= "Coefficient of variation in life expectancy", #make clean x axis title
                          x = "") #remove label on country axis, redundant
 
@@ -299,7 +312,9 @@ lifeExp_plot
 
 For this exercise, I am going to use a plot I made back in assignment 1. I looked at the relationship between GDP and life expectancy for the entire dataset, and see if there was a certain level of wealth at which the associated gains in life expectancy became muted. Without knowledge of `dplyr` and `ggplot2`, the process was more difficult than it could have been and the graph doesn't look as nice as what I can do now.
 
-Below on the left is my old graph done wth base R plotting, and on the right is my new version of the graph made with `ggplot2`:
+Below on the left is my old graph done wth base R plotting, and on the right is my new version of the graph made with `ggplot2`. 
+
+- __Note:__ _this code is written in the order of (1. store new graph to object, 2. make old graph, 3. display new graph from object) because my old base R plot can't be saved to an object within an Rmd file. If I want the old one on the left and the new one on the right within a two-column display, the right panel will be filled entirely with my new graph's code if I try to code it directly after the old graph. As it is, the call to the new.gr object is still in that right panel, but it allows enough space for the graph to be displayed under it. If my old graph were a ggplot2 plot, this ugly code could be avoided by saving them both as objects and calling them in only two lines._
 ```{r ex4_new, warning=F}
 
 new.gr <- gapminder %>%
@@ -311,18 +326,18 @@ new.gr <- gapminder %>%
                            formula = y ~ log(x)) + #formula for the line- this actually makes a log relationship which is what I want, not linear
               scale_x_continuous(lim = c(0,50000), #limit the x-axis towards the low-GDP section in which the asymptote is approached
                                  labels = scales::dollar_format() ) + #put x axis labels in dollar format
+              ylim(c(0,90)) +
               labs( x = "GDP per capita, ($ US, inflation-adjusted)", #make nice x axis label
                     y = "Life expectancy", #nice y axis label
                     title = "Life expectancy increases correlated to rising GDP seem to show diminishing returns",
                     caption = "Data source: R gapminder package, http://www.gapminder.org/data") + #tell the user what I'm trying to show
               theme_bw() + #use the nicer black and white theme
-              theme(plot.title = element_text(size=8, #change title size
-                                              face="bold"), #make title bold
-                    plot.caption = element_text(size=7), #make caption text smaller
+              theme(plot.title = element_text(size = 10, #change title size
+                                              face = "bold"), #make title bold
+                    plot.caption = element_text(size = 7), #make caption text smaller
                     axis.title = element_text( face = "bold") ) #make axis labels bold
 ```
 
-<!-- this code is written in the order of 1. store new graph to object, 2. make old graph, 3. display new graph because the base R plot can't be saved to an object in an Rmd file, and the two column display will fill the panel beside the old graph with my new graph's code if I don't call the new graph from an object-->
 
 <div class="twoC">
 ```{r ex4_old_and_display, warning=F}
@@ -360,29 +375,28 @@ new.gr #display the new graph
 
 #### A comparison of the two graphs:
  - The quality of the image is higher in the new graph; it looks more modern and sharp.
- - In my original graph, I didn't really like how the hollow markers looked. but I couldn't use solid filled points because there was too much overlap.
-  + In the new graph, the use of the _alpha_ argument allowed points to not overshadow eachother as much.
- - Because I didn't colour points by continent in the new graph, I didn't need a legend at all. 
-  + If I did need a legend, then `ggplot2` would have done it for me automatically, saving the steps of manually creating it in my original code.
+ - In my original graph, I didn't really like how the hollow markers looked. but I couldn't use solid filled points because there was too much overlap In the new graph, the use of the _alpha_ argument allowed points to not overshadow eachother as much.
+ - Because I didn't colour points by continent in the new graph, I didn't need a legend at all. If I did need a legend, then `ggplot2` would have done it for me automatically, saving the steps of manually creating it in my original code.
  
 #### Things I did differently in the new graph:
  - I added a fitted logarithmic line to guide the viewer's eye to the trend I am trying to show.
  - I did not colour points by continents because the intention of the graph is to show the effect of GDP on life expectancy and extra colours distract the viewer's attention from what I want them to see.
+ - I started the y-axis at zero, so as to give a better sense of proportion to the life expectancy increases. If I let the y limits be set automatically, starting at about 20, the increases in life expectancy appear more exaggerated.
  - I changed the figure title so that it better reflects the graph's purpose.
- - I added a caption for the data source, found using `?gapminder`.
+ - I added a caption for the data source, which I found in `?gapminder`.
  - I removed the redundant "(years)" part of the y-axis label.
- - I improved the y-axis label by putting the units of GDP.
+ - I improved the y-axis label by clarifying the units of GDP.
  - The x-axis tick marks are labelled with dollar signs.
  
 #### Things I thought about doing differently in the new graph but chose not to:
- - I considered putting a log x-axis with `scale_x_log10()`. It would declutter points and spread them out more, but I decided not to as the point I was originally trying to address was whether there is a certain GDP level that life expectancy gains are muted at. The linear x-axis shows thelevelling of the trend better, and also allows easier reading of the x-axis values for the user to intepret.
- - I considered to turn off the x-axis limits, but the points past $ 50000 (all from Kuwait) are a distraction to the trend I am trying to highlight.
+ - I considered putting a log x-axis with `scale_x_log10()`. It would declutter points and spread them out more, but I decided not to as the point I was originally trying to address was whether there is a certain GDP level that life expectancy gains are muted at. The linear x-axis shows the levelling of the trend better, and also allows easier reading of the GDP values.
+ - I considered to turn off the x-axis limits, but the points past $50000 (all from Kuwait) are a distraction to the trend I am trying to highlight. The Kuwait points are interesting but they are a unique and separate story.
 
 
 ## Exercise 5: Writing figures to file
 
-In order to save my plot in a reproducible way, I will use there `here` package to do so. I will save the last plot I made in exercise 4 by not specifying the `plot` argument within `ggsave`.
-```{r ex5_save_last, warning = F}
+In order to save my plot in a reproducible way, I will use the `here` package to do so. I will save the last plot I made in exercise 4 by not specifying the `plot` argument within `ggsave`.
+```{r ex5_save_last, warning = F, message = F}
 
 #set file saving location with here::here
 file.loc.ex5plot1 <- here::here("Assignments", "Assignment_05", "ex5_plot-GDP_x_lifeExp.png")
@@ -393,15 +407,15 @@ ggsave(filename = file.loc.ex5plot1,
 
 ```
 
-Sometimes, though, I won't want to save the last plot I made and will need to use the `plot` argument of `ggsave`, as in the example below where I call in the plot I made back in exercise 3. Just to mix it up, I will save this plot in pdf format (vector) instead of png format (raster), and I will save one copy in wide format and one in narrow format.
-```{r ex5_save_earlier}
+Sometimes, though, I won't want to save the last plot I made and will need to use the `plot` argument of `ggsave`, as in the example below where I call in the plot object I made back in exercise 3. Just to mix it up, I will save this plot in pdf format (vector) instead of png format (raster), and I will save one copy in wide format and one in narrow format.
+```{r ex5_save_earlier, warning = F, message = F}
 
 #save the exercise 3 plot using here::here and ggsave(), make it wider
 file.loc.ex5plot2_wide <- here::here("Assignments", "Assignment_05", "ex5_plot-lifeExp_CV_Asia-wide.pdf")
 ggsave(filename = file.loc.ex5plot2_wide,
        plot = lifeExp_plot,
        device = "pdf",
-       width = 12,
+       width = 14,
        height = 6)
 
 #save the exercise 3 plot but make it tall and narrow
@@ -410,7 +424,7 @@ ggsave(filename = file.loc.ex5plot2_tall,
        plot = lifeExp_plot,
        device = "pdf",
        height = 12,
-       width = 5)
+       width = 6)
 
 ```
 
